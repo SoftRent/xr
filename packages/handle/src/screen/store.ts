@@ -1,0 +1,86 @@
+import { getVoidObject, PointerEvent } from '@pmndrs/pointer-events'
+import { Scene, Vector2 } from 'three'
+
+export class ScreenHandleStore<T = unknown> {
+  private map = new Map<
+    number,
+    {
+      initialEvent: PointerEvent
+      latestEvent: PointerEvent
+      initialScreenPosition: Vector2
+      currentScreenPosition: Vector2
+    }
+  >()
+  private initial: T
+
+  constructor(
+    private apply: (initial: T, map: ScreenHandleStore['map']) => void,
+    private getInitial: () => T,
+  ) {
+    this.initial = getInitial()
+  }
+
+  bind(scene: Scene): () => void {
+    const down = this.onPointerDown.bind(this)
+    const end = this.onPointerEnd.bind(this)
+    const move = this.onPointerMove.bind(this)
+    const voidObject = getVoidObject(scene)
+    voidObject.addEventListener('pointermove', move)
+    voidObject.addEventListener('pointerdown', down)
+    voidObject.addEventListener('pointercancel', end)
+    voidObject.addEventListener('pointerup', end)
+    return () => {
+      voidObject.removeEventListener('pointermove', move)
+      voidObject.removeEventListener('pointerdown', down)
+      voidObject.removeEventListener('pointercancel', end)
+      voidObject.removeEventListener('pointerup', end)
+    }
+  }
+
+  private onPointerDown(e: PointerEvent) {
+    if (e.intersection.details.type != 'screen-ray') {
+      return
+    }
+    e.target.setPointerCapture(e.pointerId)
+    this.map.set(e.pointerId, {
+      initialScreenPosition: new Vector2(),
+      currentScreenPosition: e.intersection.details.screenPoint.clone(),
+      initialEvent: e,
+      latestEvent: e,
+    })
+    this.save()
+  }
+
+  private onPointerEnd(e: PointerEvent) {
+    if (!this.map.delete(e.pointerId)) {
+      return
+    }
+    this.save()
+  }
+
+  private onPointerMove(e: PointerEvent) {
+    if (e.intersection.details.type != 'screen-ray') {
+      return
+    }
+    const entry = this.map.get(e.pointerId)
+    if (entry == null) {
+      return
+    }
+    entry.latestEvent = e
+    entry.currentScreenPosition.copy(e.intersection.details.screenPoint)
+  }
+
+  private save(): void {
+    for (const entry of this.map.values()) {
+      entry.initialScreenPosition.copy(entry.currentScreenPosition)
+    }
+    this.initial = this.getInitial()
+  }
+
+  update(): void {
+    if (this.map.size === 0) {
+      return
+    }
+    this.apply(this.initial, this.map)
+  }
+}
