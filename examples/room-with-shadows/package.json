@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@react-three/xr": "workspace:~",
+    "maath": "^0.10.8"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "check:eslint": "eslint \"*.{ts,tsx}\"",
+    "fix:eslint": "eslint \"*.{ts,tsx}\" --fix"
+  }
+}
