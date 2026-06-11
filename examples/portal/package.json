@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@react-three/xr": "workspace:~",
+    "@react-three/handle": "workspace:~"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "check:eslint": "eslint \"*.{ts,tsx}\"",
+    "fix:eslint": "eslint \"*.{ts,tsx}\" --fix"
+  }
+}
